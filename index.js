@@ -21,6 +21,7 @@ function RfSensorAccessory(log, config) {
 	this.rfcodeon = config['rfcodeon'] || 'undefined';
 	this.rfcodeoff = config['rfcodeoff'] || 'undefined';
 	this.accessoryservicetype = config['accessoryservicetype'] || 'MotionSensor';
+	this.accessoryservicetype = config['accessoryservicetype'] || 'SmokeSensor';
 
 	this.client_Id 		= 'mqttjs_' + Math.random().toString(16).substr(2, 8);
 
@@ -46,6 +47,9 @@ function RfSensorAccessory(log, config) {
 	switch (this.accessoryservicetype) {
 	case 'MotionSensor':
 		this.service = new Service.MotionSensor();
+		break;
+	case 'SmokeSensor':
+		this.service = new Service.SmokeSensor();
 		break;
 	case 'StatelessProgrammableSwitch':
 		this.service = new Service.StatelessProgrammableSwitch();
@@ -79,6 +83,17 @@ function RfSensorAccessory(log, config) {
 				self.service.getCharacteristic(Characteristic.MotionDetected).setValue(self.value);
 				}.bind(self), self.ondelay);
 				break;
+			case 'SmokeSensor':
+				if (sensoractive) {
+					clearTimeout(timeout);
+					self.value = Boolean('true');
+					self.service.getCharacteristic(Characteristic.SmokeDetected).setValue(self.value);
+				}
+				self.value = Boolean(0);
+				timeout = setTimeout(function() {
+				self.service.getCharacteristic(Characteristic.SmokeDetected).setValue(self.value);
+				}.bind(self), self.ondelay);
+				break;
 			case 'StatelessProgrammableSwitch':
 				if (sensoractive) {
 					self.service.getCharacteristic(Characteristic.ProgrammableSwitchEvent).setValue(0);
@@ -90,11 +105,14 @@ function RfSensorAccessory(log, config) {
 		if (sensoron) {
 			self.value = Boolean('true');
 			self.service.getCharacteristic(Characteristic.MotionDetected).setValue(self.value);
+			self.service.getCharacteristic(Characteristic.SmokeDetected).setValue(self.value);
+			
 		}
 		var sensoroff = Boolean(self.rfcodeoff == rfreceiveddata);
 		if (sensoroff) {
 			self.value = Boolean(0);
 			self.service.getCharacteristic(Characteristic.MotionDetected).setValue(self.value);
+			self.service.getCharacteristic(Characteristic.SmokeDetected).setValue(self.value);
 		}
 	});
 
@@ -117,4 +135,3 @@ RfSensorAccessory.prototype.getServices = function() {
 
 	return [informationService, this.service];
 }
-
